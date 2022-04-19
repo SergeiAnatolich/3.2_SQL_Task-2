@@ -3,12 +3,14 @@ package ru.netology.data;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
+import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import lombok.SneakyThrows;
 import lombok.Value;
 
 import java.sql.DriverManager;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 
@@ -104,7 +106,7 @@ public class DataGenerator {
         return token;
     }
 
-    public static Response getCardUser(String token) {
+    public static Response getResponse(String token) {
         Response response = given()
                 .spec(requestSpec)
                 .auth().oauth2(token)
@@ -117,12 +119,43 @@ public class DataGenerator {
         return response;
     }
 
-    private static void transfer() {
+    public static String getBalance(Response response, int index) {
+        JsonPath jsonPathValidator = response.jsonPath();
+        String balance = jsonPathValidator.getString("balance[" + index + "]");
+        return balance;
+    }
 
+    public static int getCardIndex(Response response, String number) {
+        JsonPath jsonPathValidator = response.jsonPath();
+        List<String> numbers = jsonPathValidator.getList("number");
+        int index = numbers.indexOf("**** **** **** " + number);
+        return index;
+    }
+
+    @Value
+    public static class Transfer {
+        String from;
+        String to;
+        int amount;
+    }
+
+    public static Transfer getTransfer(String from, String to, int amount) {
+        return new Transfer(from, to, amount);
+    }
+
+    public static void transfer(Transfer transfer, String token) {
+        given()
+                .spec(requestSpec)
+                .auth().oauth2(token)
+                .body(transfer)
+                .when()
+                .post("/api/transfer")
+                .then()
+                .statusCode(200);
     }
 
     @SneakyThrows
-    public static void cleanDB() {
+    public static void cleanTables() {
         var cleanAuthCodes = "DELETE FROM auth_codes;";
         var cleanCardTransactions = "DELETE FROM card_transactions;";
         var cleanCards = "DELETE FROM cards;";

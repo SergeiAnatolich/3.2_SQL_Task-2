@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import ru.netology.data.DataGenerator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 public class AppTest {
 
@@ -12,13 +13,16 @@ public class AppTest {
     public void test() {
         DataGenerator.authUser(DataGenerator.getAuthInfo());
         var token = DataGenerator.verificationUser(DataGenerator.getVerificationInfo());
-        var cards = DataGenerator.getCardUser(token);
-        String count = cards.path("balance");
-        assertThat(count, equals("1000000"));
+        var transfer = DataGenerator.getTransfer("5559 0000 0000 0002", "5559 0000 0000 0008", 1000);
+        DataGenerator.transfer(transfer, token);
+        var response = DataGenerator.getResponse(token);
+        int index = DataGenerator.getCardIndex(response, "0002");
+        String balance = DataGenerator.getBalance(response, index);
+        assertThat(balance, equalTo("9000"));
     }
 
     @AfterAll
-    static void shouldCleanDB() {
-        DataGenerator.cleanDB();
+    static void shouldCleanTables() {
+        DataGenerator.cleanTables();
     }
 }
